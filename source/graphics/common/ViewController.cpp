@@ -83,7 +83,14 @@ void ViewController::runOnce(void)
             lastrun10 = curtime;
             if (!client->isConnected())
                 client->connect();
-            if (client->isConnected() && view->getState() == MeshtasticView::eBootScreenDone) {
+            // The 10s cadence also drives reconnects, but re-requesting config on
+            // that same tick restarts handleStartConfig() on the node before a
+            // slow config stream can drain, so the boot screen never advances.
+            // Back the retry off so the stream has room to complete.
+            static time_t lastConfigRequest = 0;
+            if (client->isConnected() && view->getState() == MeshtasticView::eBootScreenDone &&
+                (lastConfigRequest == 0 || curtime - lastConfigRequest >= 60)) {
+                lastConfigRequest = curtime;
                 requestConfigRequired = true;
                 requestConfig();
             }
