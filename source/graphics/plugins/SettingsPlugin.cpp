@@ -383,7 +383,8 @@ void SettingsPlugin::clearDialog(bool restore)
     body = nullptr;
     errorLabel = nullptr;
     fields.fill(nullptr);
-    lv_obj_delete(old);
+    // Reached from an LVGL event callback; a synchronous delete frees the tree mid-dispatch.
+    lv_obj_delete_async(old);
     lv_group_delete(dialogGroup);
     dialogGroup = nullptr;
 }
