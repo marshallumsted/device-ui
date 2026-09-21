@@ -1038,10 +1038,20 @@ void PluggableView::newMessage(uint32_t from, uint32_t to, uint8_t ch, const cha
 {
     if (!messages)
         return;
-    if (restore)
+    if (restore) {
         messages->restoreMessage(from, to, ch, msg, msgtime, false);
-    else
+    } else {
         messages->newMessage(from, to, ch, msg, msgtime);
+        // Nothing resets LVGL's inactivity timer when a message arrives, and
+        // LGFXDriver::task_handler() only leaves powersave on touch or button.
+        // A message received while the screen has slept therefore never shows:
+        // the display stays black and the popup is missed. Count an incoming
+        // message as activity so the screen wakes and the alert is seen. Gated
+        // on the same setting as the popup itself so "Message popups: Off"
+        // stays quiet.
+        if (db.uiConfig.alert_enabled)
+            lv_display_trigger_activity(NULL);
+    }
 }
 
 void PluggableView::packetReceived(const meshtastic_MeshPacket &p)
