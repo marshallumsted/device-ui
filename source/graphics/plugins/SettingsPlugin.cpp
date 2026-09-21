@@ -383,7 +383,13 @@ void SettingsPlugin::clearDialog(bool restore)
     body = nullptr;
     errorLabel = nullptr;
     fields.fill(nullptr);
-    lv_obj_delete(old);
+    // clearDialog() runs from inside an LVGL event callback (confirm()/cancel()
+    // are reached from LV_EVENT_SHORT_CLICKED). Deleting the dialog synchronously
+    // frees the widget tree while lv_obj_send_event() is still iterating its
+    // event descriptors, so dispatch resumes on freed memory and jumps to a
+    // bogus address (InstructionFetchError). Defer the delete until dispatch
+    // has unwound.
+    lv_obj_delete_async(old);
     lv_group_delete(dialogGroup);
     dialogGroup = nullptr;
 }
