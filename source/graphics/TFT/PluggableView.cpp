@@ -1038,10 +1038,14 @@ void PluggableView::newMessage(uint32_t from, uint32_t to, uint8_t ch, const cha
 {
     if (!messages)
         return;
-    if (restore)
+    if (restore) {
         messages->restoreMessage(from, to, ch, msg, msgtime, false);
-    else
+    } else {
         messages->newMessage(from, to, ch, msg, msgtime);
+        // Powersave is only left on touch or button input, so count a new message as activity.
+        if (db.uiConfig.alert_enabled)
+            lv_display_trigger_activity(NULL);
+    }
 }
 
 void PluggableView::packetReceived(const meshtastic_MeshPacket &p)
